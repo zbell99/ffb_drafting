@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy Football Draft Room</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Fantasy Football Optimizer</h1>
+        <div id="teams">
+            <ul id="team-list"></ul>
+                <!-- Teams will be listed here -->
+            </ul>
+        </div>
+        
+        <div id="button-container">
+            <input type="text" id="sleeper-draft-id" placeholder="Enter Sleeper Draft ID" />
+            <button id="connect-btn">Connect</button>
+            <button id="optimize-btn">Optimize</button>
+            <div id="flash-message" style="display: none;">Successfully connected!</div>
+        </div>
+        
+    </header>
+
+    <main>
+        <section id="draft-room">
+            <div id="players-list">
+                <h2>Available Players</h2>
+                <ul id="available-players">
+                    <!-- Player items will be populated here -->
+                </ul>
+            </div>
+            <div id="draft-board">
+                <h2>Drafted</h2>
+                <select id="team-select">
+                    <!-- Dropdown options will be populated here -->
+                </select>
+                <ul id="drafted-players">
+                    <!-- Drafted players will be listed here -->
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
