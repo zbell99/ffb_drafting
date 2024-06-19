@@ -2,13 +2,13 @@ import pandas as pd
 import requests
 import json
 
-def initialize_data():
+def initialize_data(scoring_format='ADP'):
     # data = projections for each player
-    data = pd.read_csv("vorp2023.csv")
+    data = pd.read_csv("vorp2024.csv")
     # fill missing with 500 in pandas
-    data['RedraftHalfPPR'].fillna(500, inplace=True)
-    data['Name'] = data['FirstName'] + " " + data['LastName']
-    data.sort_values(by='RedraftHalfPPR', inplace=True)
+    data[scoring_format].fillna(500, inplace=True)
+    data['Name'] = data['Player First Name'] + " " + data['Player Last Name']
+    data.sort_values(by=scoring_format, inplace=True)
 
     player_to_index = {}
     # iterate through each row in the data
@@ -28,18 +28,18 @@ def initialize_data():
 
     for _, player in data.iterrows():
         names.add(player['Name'])
-        if player['Position'] == 'QB':
+        if player['POS'] == 'QB':
             qbs.add(player['Name'])
             sflex.add(player['Name'])
-        elif player['Position'] == 'RB':
+        elif player['POS'] == 'RB':
             rbs.add(player['Name'])
             flex.add(player['Name'])
             sflex.add(player['Name'])
-        elif player['Position'] == 'WR':
+        elif player['POS'] == 'WR':
             wrs.add(player['Name'])
             flex.add(player['Name'])
             sflex.add(player['Name'])
-        elif player['Position'] == 'TE':
+        elif player['POS'] == 'TE':
             tes.add(player['Name'])
             flex.add(player['Name'])
             sflex.add(player['Name'])
@@ -53,9 +53,17 @@ def reset_draft(num_teams):
     
     return drafted
 
+def league_settings(draft_id):
+    url = "https://api.sleeper.app/v1/draft/" + draft_id
+    response = requests.get(url)
+    response_body = response.text
+    parsed_json = json.loads(response_body)
+    roster_settings = parsed_json["settings"]
+    scoring_format = parsed_json["metadata"]["scoring_type"]
+    return roster_settings, scoring_format
 
-def update_draft(id, names, teams=10):
-    url = "https://api.sleeper.app/v1/draft/" + id + "/picks"
+def update_draft(draft_id, names, teams=10):
+    url = "https://api.sleeper.app/v1/draft/" + draft_id + "/picks"
     response = requests.get(url)
     response_body = response.text
     parsed_json = json.loads(response_body)
