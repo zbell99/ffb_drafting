@@ -1,10 +1,12 @@
 import pandas as pd
 import requests
 import json
+import os
 
 def initialize_data(scoring_format='ADP'):
     # data = projections for each player
-    data = pd.read_csv("vorp2024.csv")
+    # print out the data files in the directory
+    data = pd.read_csv("../vorp2024.csv")
     # fill missing with 500 in pandas
     data[scoring_format].fillna(500, inplace=True)
     data['Name'] = data['Player First Name'] + " " + data['Player Last Name']

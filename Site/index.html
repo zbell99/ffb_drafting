@@ -20,7 +20,8 @@
             <input type="text" id="sleeper-draft-id" placeholder="Enter Sleeper Draft ID" />
             <button id="connect-btn">Connect</button>
             <button id="optimize-btn">Optimize</button>
-            <div id="flash-message" style="display: none;">Successfully connected!</div>
+            <div id="flash-message-connected" style="display: none;">Successfully connected!</div>
+            <div id="flash-message-optimizing" style="display: none;">Optimizing...</div>
         </div>
         
     </header>
@@ -28,9 +29,38 @@
     <main>
         <section id="draft-room">
             <div id="players-list">
-                <h2>Available Players</h2>
-                <ul id="available-players">
-                    <!-- Player items will be populated here -->
+                <div id="players-header">
+                    <h2>Available Players</h2>
+                    <div id="tabs">
+                        <button class="tab-link active" data-tab="overall">Overall</button>
+                        <button class="tab-link" data-tab="QB">QB</button>
+                        <button class="tab-link" data-tab="RB">RB</button>
+                        <button class="tab-link" data-tab="WR">WR</button>
+                        <button class="tab-link" data-tab="TE">TE</button>
+                        <button class="tab-link" data-tab="K">K</button>
+                        <button class="tab-link" data-tab="DST">DST</button>
+                    </div>
+                </div>
+                <ul id="available-players-overall" class="tab-content active">
+                    <!-- Overall Player items will be populated here -->
+                </ul>
+                <ul id="available-players-QB" class="tab-content">
+                    <!-- QB Player items will be populated here -->
+                </ul>
+                <ul id="available-players-RB" class="tab-content">
+                    <!-- RB Player items will be populated here -->
+                </ul>
+                <ul id="available-players-WR" class="tab-content">
+                    <!-- WR Player items will be populated here -->
+                </ul>
+                <ul id="available-players-TE" class="tab-content">
+                    <!-- TE Player items will be populated here -->
+                </ul>
+                <ul id="available-players-K" class="tab-content">
+                    <!-- K Player items will be populated here -->
+                </ul>
+                <ul id="available-players-DST" class="tab-content">
+                    <!-- DST Player items will be populated here -->
                 </ul>
             </div>
             <div id="draft-board">
