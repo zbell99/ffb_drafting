@@ -10,6 +10,7 @@ def initialize_data(scoring_format='ADP'):
     # fill missing with 500 in pandas
     data[scoring_format].fillna(500, inplace=True)
     data['Name'] = data['Player First Name'] + " " + data['Player Last Name']
+    data['Name'] = data['Name'].str.replace('.', '')
     data.sort_values(by=scoring_format, inplace=True)
 
     player_to_index = {}
@@ -72,13 +73,14 @@ def update_draft(draft_id, names, teams=10):
     drafted = reset_draft(teams)
     drafted_pos = reset_draft(teams)
     for team in drafted_pos.keys():
-        drafted_pos[team] = {"QB": 0, "RB": 0, "WR": 0, "TE": 0, "DST": 0, "K": 0}
+        drafted_pos[team] = {"QB": 0, "RB": 0, "WR": 0, "TE": 0, "DEF": 0, "K": 0}
 
     for pick in parsed_json:
         team = pick["draft_slot"]
         position = pick["metadata"]["position"]
         name = pick["metadata"]["first_name"] + " " + pick["metadata"]["last_name"]
         name = name.replace(".", "")
+
         if name in names: ###DRAFT DATA MUST MATCH PROJECTION DATA FOR NAMES
             drafted[team].append(name)
         else:
