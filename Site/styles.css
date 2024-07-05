@@ -21,6 +21,7 @@ header {
     justify-content: center;
     list-style-type: none;
     padding: 0;
+    margin-bottom: 30px;
 }
 
 #team-list li {
@@ -34,7 +35,7 @@ header {
 }
 
 #team-list li.active {
-    background-color: #5cb800;
+    background-color: #7b00ff;
 }
 
 main {
@@ -89,41 +90,40 @@ li {
     transition: background-color 0.3s;
 }
 
-li:hover {
-    background-color: #f0f0f0;
-}
 
 #button-container {
     position: relative;
     display: inline-block;
 }
 
+#launch-btn,
 #connect-btn,
 #optimize-btn {
     display: inline-block;
     margin-left: 5px; /* Adjust as needed */
+    background-color: #333;
+    color: white;
+    border-radius: 5px;
+    font-size: .9em;
 }
 
-#flash-message-connected {
+#launch-btn:hover,
+#connect-btn:hover,
+#optimize-btn:hover {
+    background-color: #7b00ff;
+    color: white;
+}
+
+#flash-message {
     display: none;
     position: absolute;
     top: -3px; /* Adjust as needed */
-    right: calc(100% - 500px); /* Adjust as needed */
-    color: green;
+    left: calc(310px); /* Adjust as needed */
+    color: #D6B4F6; 
     padding: 5px;
     border-radius: 5px;
     font-weight: bold; /* Make the text bold */
-}
-
-#flash-message-optimizing {
-    display: none;
-    position: absolute;
-    top: -3px; /* Adjust as needed */
-    right: calc(100% - 410px); /* Adjust as needed */
-    color: green;
-    padding: 5px;
-    border-radius: 5px;
-    font-weight: bold; /* Make the text bold */
+    white-space: nowrap;
 }
 
 #players-header {
@@ -132,11 +132,49 @@ li:hover {
     align-items: center;
     border-bottom: 2px solid #333;
     padding-bottom: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
+}
+
+#Recommendation {
+    color: #7b00ff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold; 
+    font-size: 1.1em;
+    margin-top: 3px;
 }
 
 #tabs {
     display: flex;
+}
+
+#header-links {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    color: white;
+}
+
+#header-links a {
+    color: white;
+    text-decoration: underline;
+}
+
+#team-select {
+    color: black;
+    width: 100%;
+    font-size: 1.4em;
+    background-color: #f5f5f5;
+    border: none;
+    border-bottom: 2px solid #7b00ff;
+    border-radius: 5px;
+    margin-top: 10px;
+}
+
+.vorp {
+    float: right;
+    white-space: nowrap; /* Prevent wrapping */
 }
 
 .tab-link {
@@ -151,7 +189,7 @@ li:hover {
 }
 
 .tab-link.active {
-    background-color: #5cb800;
+    background-color: #7b00ff;
 }
 
 .tab-content {
@@ -161,5 +199,4 @@ li:hover {
 .tab-content.active {
     display: block;
 }
-
 

@@ -9,7 +9,11 @@
 </head>
 <body>
     <header>
-        <h1>Fantasy Football Optimizer</h1>
+        <h1>Sleeper Fantasy Football Optimizer</h1>
+        <div id="header-links">
+            <a href="#" id="sleeper-link">Sleeper</a> | 
+            <a href="/Site/indexESPN.html" id="espn-link">ESPN</a>
+        </div>
         <div id="teams">
             <ul id="team-list"></ul>
                 <!-- Teams will be listed here -->
@@ -20,8 +24,7 @@
             <input type="text" id="sleeper-draft-id" placeholder="Enter Sleeper Draft ID" />
             <button id="connect-btn">Connect</button>
             <button id="optimize-btn">Optimize</button>
-            <div id="flash-message-connected" style="display: none;">Successfully connected!</div>
-            <div id="flash-message-optimizing" style="display: none;">Optimizing...</div>
+            <div id="flash-message" style="display: none;"></div>
         </div>
         
     </header>
@@ -31,6 +34,12 @@
             <div id="players-list">
                 <div id="players-header">
                     <h2>Available Players</h2>
+                    <div id = "Recommendation">
+                        <h2> </h2>
+                        <ul id="Recommendation-players">
+                            <!-- Recommended players will be listed here -->
+                        </ul>
+                    </div>
                     <div id="tabs">
                         <button class="tab-link active" data-tab="overall">Overall</button>
                         <button class="tab-link" data-tab="QB">QB</button>
@@ -75,6 +84,6 @@
         </section>
     </main>
 
-    <script src="script.js"></script>
+    <script src="scriptSleeper.js"></script>
 </body>
 </html>

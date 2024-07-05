@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy Football Draft Room</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>ESPN Fantasy Football Optimizer</h1>
+        <div id="header-links">
+            <a href="/Site/indexSleeper.html" id="sleeper-link">Sleeper</a> | 
+            <a href="#" id="espn-link">ESPN</a>
+        </div>
+        <div id="teams">
+            <ul id="team-list"></ul>
+                <!-- Teams will be listed here -->
+            </ul>
+        </div>
+        
+        <div id="button-container">
+            <select name="browser" id="browser-select">
+                <option value="">Please Choose a Browser</option>
+                <option value="chrome">Chrome</option>
+                <option value="firefox">Firefox</option>
+                <option value="safari">Safari</option>
+                <option value="edge">Edge</option>
+              </select>
+            <button id="launch-btn">Launch</button>
+            <button id="connect-btn">Connect</button>
+            <button id="optimize-btn">Optimize</button>
+            <div id="flash-message" style="display: none;"></div>
+        </div>
+        
+    </header>
+
+    <main>
+        <section id="draft-room">
+            <div id="players-list">
+                <div id="players-header">
+                    <h2>Available Players</h2>
+                    <div id = "Recommendation">
+                        <h2> </h2>
+                        <ul id="Recommendation-players">
+                            <!-- Recommended players will be listed here -->
+                        </ul>
+                    </div>
+                    <div id="tabs">
+                        <button class="tab-link active" data-tab="overall">Overall</button>
+                        <button class="tab-link" data-tab="QB">QB</button>
+                        <button class="tab-link" data-tab="RB">RB</button>
+                        <button class="tab-link" data-tab="WR">WR</button>
+                        <button class="tab-link" data-tab="TE">TE</button>
+                        <button class="tab-link" data-tab="K">K</button>
+                        <button class="tab-link" data-tab="DST">DST</button>
+                    </div>
+                </div>
+                <ul id="available-players-overall" class="tab-content active">
+                    <!-- Overall Player items will be populated here -->
+                </ul>
+                <ul id="available-players-QB" class="tab-content">
+                    <!-- QB Player items will be populated here -->
+                </ul>
+                <ul id="available-players-RB" class="tab-content">
+                    <!-- RB Player items will be populated here -->
+                </ul>
+                <ul id="available-players-WR" class="tab-content">
+                    <!-- WR Player items will be populated here -->
+                </ul>
+                <ul id="available-players-TE" class="tab-content">
+                    <!-- TE Player items will be populated here -->
+                </ul>
+                <ul id="available-players-K" class="tab-content">
+                    <!-- K Player items will be populated here -->
+                </ul>
+                <ul id="available-players-DST" class="tab-content">
+                    <!-- DST Player items will be populated here -->
+                </ul>
+            </div>
+            <div id="draft-board">
+                <h2>Drafted</h2>
+                <select id="team-select">
+                    <!-- Dropdown options will be populated here -->
+                </select>
+                <ul id="drafted-players">
+                    <!-- Drafted players will be listed here -->
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <script src="scriptESPN.js"></script>
+</body>
+</html>
