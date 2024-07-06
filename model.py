@@ -4,7 +4,7 @@ from pulp import LpProblem, LpVariable, lpSum, value, LpMaximize
 from itertools import chain
 import helpers
 
-def maximize_vorp(players, roster_size, vorp, remaining_settings, picks, player_position, full_team_settings, avail=[], next_pick_player=""):
+def maximize_vorp(players, roster_size, vorp, remaining_settings, picks, player_position, full_team_settings, projection_amount, cp, avail=[], next_pick_player=""):
     # Initialize model
     start_alpha = 2
     model = LpProblem("FantasyFootballOptimization", LpMaximize)
@@ -93,7 +93,10 @@ def maximize_vorp(players, roster_size, vorp, remaining_settings, picks, player_
         # Constraint: For each pick, we can only select players who are still available based on reduced pool from ADP
         else: #true for the greedy algorithm used to set up the main optimization
             for pick in picks[1:]:
-                available_players = players[pick-picks[0]:]
+                if projection_amount == 0:
+                    available_players = players[pick-cp:]
+                else:
+                    available_players = players[pick-picks[0]:]
                 model += lpSum([(players_selected_v[player]+players_selected_fv[player]+players_selected_sf[player]) for player in available_players]) >= len(picks) - picks.index(pick)
         
     # Solve the problem
@@ -120,7 +123,7 @@ def maximize_vorp(players, roster_size, vorp, remaining_settings, picks, player_
 
     return selected_players, starting_players, total_vorp
 
-def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_pos, next_pick_player=""):
+def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_pos, projection_amount, next_pick_player=""):
     # Load data -- WONT NEED THIS
     df = pd.read_csv('vorp2024.csv')
     
@@ -152,6 +155,7 @@ def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_
     full_team_settings = helpers.full_position_constraints(roster_settings)
 
     drafted_players = list(chain(*drafted_teams.values()))
+    cp = len(drafted_players) + 1 #used if no projections
     if next_pick_player:
         drafted_players.append(next_pick_player)
 
@@ -166,6 +170,8 @@ def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_
     personal_picks = helpers.get_picks(personal_team, roster_size, teams)
     
     current_pick = len(drafted_players) + 1 #needs to be based on progress of the draft
+    if next_pick_player:
+        current_pick -= 1
     
     #personal picks remaining
     personal_picks = [pick for pick in personal_picks if pick >= current_pick]
@@ -175,7 +181,7 @@ def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_
         print('Draft is over')
         return drafted_teams[personal_team]
 
-    while current_pick < personal_picks[0]:
+    while current_pick < personal_picks[0] and projection_amount > 0:
         cur_team = helpers.get_team_from_pick(current_pick, teams)
         picks = helpers.get_picks(cur_team, roster_size, teams)
         picks = [pick for pick in picks if pick >= current_pick]
@@ -188,7 +194,7 @@ def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_
 
         remaining_settings = helpers.remaining_position_constraints(drafted_pos, full_team_settings, cur_team)
 
-        selected_players_temp, starting_players_temp, total_vorp_temp = maximize_vorp(available, roster_size, vorp_df, remaining_settings, picks, player_position, full_team_settings)
+        selected_players_temp, starting_players_temp, total_vorp_temp = maximize_vorp(available, roster_size, vorp_df, remaining_settings, picks, player_position, full_team_settings, projection_amount=0, cp=current_pick)
 
         #POST-PROCESS PICKED PLAYER
         new_pick = selected_players_temp[0]
@@ -204,6 +210,9 @@ def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_
         available.remove(new_pick)
         current_pick += 1
 
+        if next_pick_player and current_pick == personal_picks[0]-1:
+            current_pick += 1
+
     #project picks/players available for next round's pick
     available1 = copy.deepcopy(available)
     current_pick1 = current_pick
@@ -211,7 +220,7 @@ def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_
     if len(personal_picks) <= 1:
         print('Only one pick left')
     else:
-        while current_pick1 < personal_picks[1]:
+        while current_pick1 < personal_picks[1] and projection_amount > 1:
             cur_team = helpers.get_team_from_pick(current_pick1, teams)
             picks = helpers.get_picks(cur_team, roster_size, teams)
             picks = [pick for pick in picks if pick >= current_pick1]
@@ -223,7 +232,7 @@ def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_
             print("Roster Size:", roster_size, len(drafted_cur))
             remaining_settings = helpers.remaining_position_constraints(drafted_pos_preprocess, full_team_settings, cur_team)
             
-            selected_players_temp, starting_players_temp, total_vorp_temp = maximize_vorp(available1, roster_size, vorp_df, remaining_settings, picks, player_position, full_team_settings)
+            selected_players_temp, starting_players_temp, total_vorp_temp = maximize_vorp(available1, roster_size, vorp_df, remaining_settings, picks, player_position, full_team_settings, projection_amount=0, cp=current_pick1)
 
             new_pick = selected_players_temp[0]
             drafted_teams_preprocess[cur_team].append(new_pick)
@@ -288,7 +297,9 @@ def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_
     # print('Superflex:', starting_sflex, 'current', drafted_pos[personal_team]['QB'] + drafted_pos[personal_team]['RB'] + drafted_pos[personal_team]['WR'] + drafted_pos[personal_team]['TE'])
     if next_pick_player:
         available.insert(0, next_pick_player)
-    return available, roster_size, vorp_df, remaining_settings, personal_picks, player_position, full_team_settings, available1
+    if projection_amount < 2:
+        available1 = []
+    return available, roster_size, vorp_df, remaining_settings, personal_picks, player_position, full_team_settings, available1, cp
 
     # Run optimization with projections through first two picks
     selected_players, starting_players, total_vorp = maximize_vorp(available, roster_size, vorp_df, remaining_settings, personal_picks, player_position, full_team_settings, avail=available1)
