@@ -7,6 +7,7 @@ if __name__ == '__main__':
     #SLEEPER SPECIFIC (lines 8,9,10)
     draft_id = "1114713116492824576"
     personal_team = 6 #first round draft pick
+    next_pick_player = "Justin Jefferson"
     roster_settings, scoring_format = setup.league_settings(draft_id)
     
     league_type = {'ppr': 'Redraft PPR ADP', 'half_ppr': 'Redraft Half PPR ADP', 'std': 'Redraft Half PPR ADP', '2qb': 'Redraft SF ADP'}
@@ -29,7 +30,7 @@ if __name__ == '__main__':
 
     df, player_to_index, qbs, rbs, wrs, tes, flex, names = setup.initialize_data(df)
     drafted_teams, drafted_pos = setup.update_draft(draft_id, names, roster_settings['teams']) #SLEEPER SPECIFIC
-    available, roster_size, vorp_df, remaining_settings, personal_picks, player_position, full_team_settings, available1 = model.model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_pos)
-    selected_players, starting_players, total_vorp = model.maximize_vorp(available, roster_size, vorp_df, remaining_settings, personal_picks, player_position, full_team_settings, available1)
+    available, roster_size, vorp_df, remaining_settings, personal_picks, player_position, full_team_settings, available1 = model.model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_pos, next_pick_player)
+    selected_players, starting_players, total_vorp = model.maximize_vorp(available, roster_size, vorp_df, remaining_settings, personal_picks, player_position, full_team_settings, available1, next_pick_player)
     
 

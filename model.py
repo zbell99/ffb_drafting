@@ -4,7 +4,7 @@ from pulp import LpProblem, LpVariable, lpSum, value, LpMaximize
 from itertools import chain
 import helpers
 
-def maximize_vorp(players, roster_size, vorp, remaining_settings, picks, player_position, full_team_settings, avail=[]):
+def maximize_vorp(players, roster_size, vorp, remaining_settings, picks, player_position, full_team_settings, avail=[], next_pick_player=""):
     # Initialize model
     start_alpha = 2
     model = LpProblem("FantasyFootballOptimization", LpMaximize)
@@ -67,7 +67,6 @@ def maximize_vorp(players, roster_size, vorp, remaining_settings, picks, player_
     model += lpSum([players_selected_v[player] for player in players if player_position[player] == "WR"]) == remaining_settings['starting_wr'] + 1 - remaining_settings['extra_wr']
     # vorp bench spot for QB + TE = 1
     model += lpSum([players_selected_v[player] for player in players if player_position[player] == "TE"]) <= remaining_settings['starting_te'] + 1 - remaining_settings['extra_te']
-    
 
     # Constraint: Any player starting must also be selected
     for player in players:
@@ -76,8 +75,11 @@ def maximize_vorp(players, roster_size, vorp, remaining_settings, picks, player_
         model += (players_starting_sf[player]) <= (players_selected_sf[player])
         model += (players_selected_v[player]) + (players_selected_fv[player]) + (players_selected_sf[player]) <= 1
     
-    # Constraint: For current pick, we can only select players who are still available from parameter
-    model += lpSum([(players_selected_v[player]+players_selected_fv[player]+players_selected_sf[player]) for player in players]) >= len(picks)
+    # Constraint: For current pick, we select player who is next pick, or from the available pool
+    if next_pick_player:
+        model += players_selected_v[next_pick_player] + players_selected_fv[next_pick_player] + players_selected_sf[next_pick_player] == 1
+    else:
+        model += lpSum([(players_selected_v[player]+players_selected_fv[player]+players_selected_sf[player]) for player in players]) >= len(picks)
 
     # Constraint: For next pick, we can only select players who are still available based on reduced pool from preprocessing
     if roster_size>1:
@@ -118,7 +120,7 @@ def maximize_vorp(players, roster_size, vorp, remaining_settings, picks, player_
 
     return selected_players, starting_players, total_vorp
 
-def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_pos):
+def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_pos, next_pick_player=""):
     # Load data -- WONT NEED THIS
     df = pd.read_csv('vorp2024.csv')
     
@@ -150,6 +152,8 @@ def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_
     full_team_settings = helpers.full_position_constraints(roster_settings)
 
     drafted_players = list(chain(*drafted_teams.values()))
+    if next_pick_player:
+        drafted_players.append(next_pick_player)
 
     drafted_teams_preprocess = copy.deepcopy(drafted_teams)
     drafted_pos_preprocess = copy.deepcopy(drafted_pos)
@@ -282,7 +286,8 @@ def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_
     # print('TE:', min_tes, max_tes, starting_te, 'current', drafted_pos[personal_team]['TE'])
     # print('Flex:', starting_flex, 'current', drafted_pos[personal_team]['RB'] + drafted_pos[personal_team]['WR'] + drafted_pos[personal_team]['TE'])
     # print('Superflex:', starting_sflex, 'current', drafted_pos[personal_team]['QB'] + drafted_pos[personal_team]['RB'] + drafted_pos[personal_team]['WR'] + drafted_pos[personal_team]['TE'])
-
+    if next_pick_player:
+        available.insert(0, next_pick_player)
     return available, roster_size, vorp_df, remaining_settings, personal_picks, player_position, full_team_settings, available1
 
     # Run optimization with projections through first two picks
