@@ -21,7 +21,10 @@ header {
     justify-content: center;
     list-style-type: none;
     padding: 0;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden; /* Prevents overflow */
 }
 
 #team-list li {
@@ -32,6 +35,10 @@ header {
     color: white;
     cursor: pointer;
     transition: background-color 0.3s;
+    flex: 1; /* Flexibly grow and shrink with the container */
+    text-align: center;
+    font-size: .8vw; /* Adjust font size relative to the viewport width */
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
 }
 
 #team-list li.active {
@@ -114,7 +121,7 @@ li {
     color: white;
 }
 
-#flash-message {
+#flash-message-Sleeper {
     display: none;
     position: absolute;
     top: -3px; /* Adjust as needed */
@@ -124,6 +131,18 @@ li {
     border-radius: 5px;
     font-weight: bold; /* Make the text bold */
     white-space: nowrap;
+}
+
+#flash-message-ESPN {
+    display: none;
+    position: absolute;
+    top: -3px; /* Adjust as needed */
+    left: calc(410px); /* Adjust as needed */
+    color: #D6B4F6; 
+    padding: 5px;
+    border-radius: 5px;
+    font-weight: bold; /* Make the text bold */
+    width: 100%;
 }
 
 #players-header {
@@ -173,6 +192,11 @@ li {
 }
 
 .vorp {
+    float: right;
+    white-space: nowrap; /* Prevent wrapping */
+}
+
+.adp {
     float: right;
     white-space: nowrap; /* Prevent wrapping */
 }

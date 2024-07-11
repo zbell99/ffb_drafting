@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentTeamIndex = 0;
     let settings = {};
     const draftedPlayers = {};
+    let done = false;
 
     const teamList = document.getElementById("team-list");
     const availablePlayersLists = {
@@ -18,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const connectBtn = document.getElementById("connect-btn");
     const optimizeBtn = document.getElementById("optimize-btn");
     const teamSelect = document.getElementById("team-select");
-    const flashMessage = document.getElementById("flash-message");
+    const flashMessage = document.getElementById("flash-message-Sleeper");
     const tabLinks = document.querySelectorAll(".tab-link");
 
     connectBtn.addEventListener("click", connectToSleeperDraft);
@@ -43,6 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
         recommendedPlayer.textContent = ``;
         const draftId = sleeperDraftIdInput.value;
         if (draftId) {
+            done = false;
             const draftData = await fetchSleeperDraftData(draftId);
             initialize(draftData);
             showFlashMessage("Successfully connected!");
@@ -55,7 +57,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const picksData = await picksResponse.json();
             const draftResponse = await fetch(`https://api.sleeper.app/v1/draft/${draftId}`);
             const draftData = await draftResponse.json();
-            console.log(draftData);
             const keys = Object.keys(draftData.settings);
             const QBs = draftData.settings[keys[4]];
             const RBs = draftData.settings[keys[3]];
@@ -87,8 +88,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function initialize({ settings, picksData }) {
-        console.log(settings);
-        console.log(picksData);
         if (settings) {
             const numOfTeams = settings.teams;
             const teams = Array.from({ length: numOfTeams }, (_, index) => `Team ${index + 1}`);
@@ -114,13 +113,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     teamSelect.appendChild(option);
                 }
             });
-
+            if (picksData.length >= settings.teams * (settings.QBs + settings.RBs + settings.WRs + settings.TEs + settings.Ks + settings.DSTs + settings.flex + settings.Bench)) {
+                done = true;
+            }
             adjustCurrentPick(picksData.length, teams);
             updateDraftedPlayersList(picksData, teams);
             displayRosterRequirements(settings);
             const availablePlayers = await fetchAvailablePlayers();
             populatePlayers(availablePlayers);
-            console.log(draftedPlayers);
         } else {
             console.error('Error: Could not find number of teams in API response');
         }
@@ -221,6 +221,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function optimize() {
+        if (done) {
+            showFlashMessage("Draft is complete!", 'done');
+            return;
+        }
         try {
             showFlashMessage("Optimizing...", 'optimizing');
             const response = await fetch('http://127.0.0.1:5000/process-info', {
@@ -229,7 +233,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    draft_id: sleeperDraftIdInput.value
+                    draft_id: sleeperDraftIdInput.value,
+                    personal_team: currentTeamIndex+1
                 })
             });
 
@@ -269,7 +274,7 @@ document.addEventListener("DOMContentLoaded", () => {
             for (let i = 0; i < count; i++) {
                 const player = players[playerIndex];
                 if (player) {
-                    listItems += `<li>${position}: ${player.Player} (${player.Team})</li>`;
+                    listItems += `<li>${position}: ${player.Player}</li>`;
                     playerIndex++;
                 } else {
                     listItems += `<li>${position}</li>`;
@@ -303,16 +308,18 @@ document.addEventListener("DOMContentLoaded", () => {
             'WR': settings.WRs,
             'TE': settings.TEs,
             'K': settings.Ks,
-            'DST': settings.DST,
+            'DST': settings.DSTs,
             'Flex': settings.flex,
             'Bench': settings.Bench
         };
-    
+
         let flexPlayers = [];
         let benchPlayers = [];
-        console.log(draftedPlayers);
-
-    
+        for (let i = 0; i < teamDraftedPlayers.length; i++) {
+            if (teamDraftedPlayers[i].Pos === 'DEF') {
+                teamDraftedPlayers[i].Pos = 'DST';
+            }
+        }
         rosterRequirements.innerHTML = `
             <h3></h3>
             <ul>
@@ -360,7 +367,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
         // Names of CSV files
         // const csvFiles = ['FantasyPros_Fantasy_Football_Projections_K.csv', 'FantasyPros_Fantasy_Football_Projections_DST.csv', 'FantasyPros_Fantasy_Football_Projections_WR.csv', 'FantasyPros_Fantasy_Football_Projections_QB.csv', 'FantasyPros_Fantasy_Football_Projections_RB.csv', 'FantasyPros_Fantasy_Football_Projections_TE.csv'];
-        const csvFile = ['../vorp2024.csv']
+        const csvFile = ['vorp2024.csv']
         // Read each CSV file and extract 'Player', 'Team', and 'FPTS' columns
         const response = await fetch(csvFile);
         const text = await response.text();

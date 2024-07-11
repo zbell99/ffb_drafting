@@ -15,33 +15,38 @@
             <a href="#" id="espn-link">ESPN</a>
         </div>
         <div id="teams">
-            <ul id="team-list"></ul>
+            <ul id="team-list">
                 <!-- Teams will be listed here -->
             </ul>
         </div>
         
         <div id="button-container">
             <select name="browser" id="browser-select">
-                <option value="">Please Choose a Browser</option>
+                <option value="choose">Please Choose a Browser</option>
                 <option value="chrome">Chrome</option>
                 <option value="firefox">Firefox</option>
-                <option value="safari">Safari</option>
-                <option value="edge">Edge</option>
-              </select>
-            <button id="launch-btn">Launch</button>
-            <button id="connect-btn">Connect</button>
-            <button id="optimize-btn">Optimize</button>
-            <div id="flash-message" style="display: none;"></div>
+            </select>
+            <button type="button" id="launch-btn">Launch</button>
+            <button type="button" id="connect-btn">Connect</button>
+            <button type="button" id="optimize-btn">Optimize</button>
+            <div id="flash-message-ESPN"></div>
         </div>
-        
     </header>
-
+    <script>
+        document.getElementById("launch-btn").addEventListener("click", function() {
+            var selectElement = document.getElementById("browser-select");
+            var selectedValue = selectElement.value;
+            if (selectedValue !== "choose") {
+                this.style.display = "none";
+            }
+        });
+    </script>
     <main>
         <section id="draft-room">
             <div id="players-list">
                 <div id="players-header">
                     <h2>Available Players</h2>
-                    <div id = "Recommendation">
+                    <div id="Recommendation">
                         <h2> </h2>
                         <ul id="Recommendation-players">
                             <!-- Recommended players will be listed here -->

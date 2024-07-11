@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let settings = {};
     let teams = [];
     let draftedPlayers = {};
+    let done = false;
 
     const teamList = document.getElementById("team-list");
     const availablePlayersLists = {
@@ -15,16 +16,17 @@ document.addEventListener("DOMContentLoaded", () => {
         DST: document.getElementById("available-players-DST"),
     };
     const draftedPlayersList = document.getElementById("drafted-players");
-    const sleeperDraftIdInput = document.getElementById("sleeper-draft-id");
     const launchBtn = document.getElementById("launch-btn");
     const connectBtn = document.getElementById("connect-btn");
     const optimizeBtn = document.getElementById("optimize-btn");
     const teamSelect = document.getElementById("team-select");
     const browserSelect = document.getElementById("browser-select");
-    const flashMessage = document.getElementById("flash-message");
+    const flashMessage = document.getElementById("flash-message-ESPN");
     const tabLinks = document.querySelectorAll(".tab-link");
-
-    connectBtn.addEventListener("click", connectToESPN);
+    connectBtn.addEventListener('click', async function(event) {
+        event.preventDefault();  // Prevent the default form submission behavior
+        await connectToESPN();
+    });
     optimizeBtn.addEventListener("click", optimize);
     launchBtn.addEventListener("click", launchDriver);
     teamSelect.addEventListener("change", teamSelectChange);
@@ -43,8 +45,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     async function connectToESPN() {
+        const recommendedPlayer = document.querySelector(`#Recommendation`);
+        recommendedPlayer.textContent = ``;
         try {
-            const response = await fetch('http://127.0.0.1:5000/scrape-ESPN2', {
+            const response = await fetch('http://127.0.0.1:5000/scrape-ESPN', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -54,14 +58,27 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             
             if (!response.ok) {
+                showFlashMessage("Only press connect once the ESPN draft room is open in your launched window", "long");
                 throw new Error('Network response was not ok');
             }
-
+            done = false;    
             const result = await response.json();
+            console.log(result);
             teams = Object.keys(result);
-            settings = result[teams[0]];
+            settings = result[teams[teams.length - 1]];
+            // remove numbers from settings
+            for (let key in settings) {
+                if (settings.hasOwnProperty(key)) {
+                    settings[key] = settings[key].replace(/[0-9]/g, '');
+                }
+                if (settings[key].includes('D/ST') || settings[key].includes('DEF')) {
+                    settings[key] = 'DST';
+                }
+            }
+            console.log(settings);
             //pickData = remove first team from result
-            delete result[teams[0]];
+            delete result[teams[teams.length - 1]];
+            teams = Object.keys(result);
             picksData = result;
             return initialize({ settings, picksData });
         } catch (error) {
@@ -96,7 +113,6 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             adjustCurrentPick(picksData);
             // Initialize an empty object to store the counts
-
             for (let team in picksData) {
                 if (picksData.hasOwnProperty(team)) {
                     let playerList = picksData[team];
@@ -116,7 +132,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }            
 
             let formattedTeams = {};
-
             for (let teamName in picksData) {
                 if (picksData.hasOwnProperty(teamName)) {
                     let players = [];
@@ -143,7 +158,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             }
             settings = Object.assign(settings, counts);
+            console.log(settings);
             draftedPlayers = formattedTeams;
+            if (picksData.length >= settings.teams * (settings.QB + settings.RB + settings.WR + settings.TE + settings.K + settings.DST + settings.FLEX + settings.BE)) {
+                done = true;
+            }
+
             // need to add position to json for each player based on settings
             displayRosterRequirements(settings);
             const availablePlayers = await fetchAvailablePlayers();
@@ -176,7 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (response.ok) {
                 // response is string and not json
                 const result = await response.text();
-                console.log(result);
+                showFlashMessage(result);
             } else {
                 const errorResponse = await response.json();
                 console.error('Error:', errorResponse);  // Handle the error response
@@ -191,26 +211,28 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const playersData = await readCSVFiles();
             playersData.sort((a, b) => b.FPTS - a.FPTS);
-
+    
             const availablePlayers = playersData.filter(player => {
+                const playerNameParts = player.Player.replace(/\./g, '').split(' ').slice(0, 2).join(' ');
                 for (const teamPlayers of Object.values(draftedPlayers)) {
-                    if (teamPlayers.some(draftedPlayer => draftedPlayer.Player.replace(/\./g, '') === player.Player)) {
+                    if (teamPlayers.some(draftedPlayer => {
+                        const draftedPlayerNameParts = draftedPlayer.Player.replace(/\./g, '').split(' ').slice(0, 2).join(' ');
+                        return draftedPlayerNameParts === playerNameParts;
+                    })) {
                         return false;
                     }
                 }
                 return true;
             });
-
             return availablePlayers;
         } catch (error) {
             console.error('Error fetching available players:', error);
             return [];
         }
-    }
+    }    
 
     function populatePlayers(players) {
         Object.values(availablePlayersLists).forEach(list => list.innerHTML = '');
-
         players.forEach(player => {
             const playerItem = document.createElement("li");
             const teamText = player.Pos === 'DST' ? '' : ` - ${player.Team}`;
@@ -218,7 +240,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const vorp = document.createElement("span");
             vorp.classList = "vorp";
             vorp.textContent = `VORP: ${player.FPTS}`
+            const adp = document.createElement("span");
+            adp.classList = "adp";
+            adp.textContent = `ADP: ${player.ADP}     |     `
             playerItem.appendChild(vorp);
+            playerItem.appendChild(adp);
             availablePlayersLists.overall.appendChild(playerItem);
             availablePlayersLists[player.Pos].appendChild(playerItem.cloneNode(true));
         });
@@ -251,15 +277,34 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function optimize() {
+        if (done) {
+            showFlashMessage("Draft is complete!");
+            return;
+        }
         try {
-            showFlashMessage("Optimizing...", 'optimizing');
-            const response = await fetch('http://127.0.0.1:5000/process-info', {
+            roster_settings = {
+                slots_qb: settings.QB,
+                slots_rb: settings.RB,
+                slots_wr: settings.WR,
+                slots_te: settings.TE,
+                slots_k: settings.K,
+                slots_def: settings.DST,
+                slots_flex: settings.FLEX,
+                slots_super_flex: 0,
+                teams: teams.length,
+                rounds: (settings.QB + settings.RB + settings.WR + settings.TE + settings.K + settings.DST + settings.FLEX + settings.BE)
+            }
+            showFlashMessage("Optimizing...may take up to 30 sec", 'long');
+            const response = await fetch('http://127.0.0.1:5000/process-info-ESPN', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    draft_id: sleeperDraftIdInput.value
+                    personal_team: currentTeamIndex+1,
+                    roster_settings: roster_settings,
+                    scoring_format: 'std',
+                    drafted_players: draftedPlayers,
                 })
             });
 
@@ -272,7 +317,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const recommendedPlayer = document.querySelector(`#Recommendation`);
             recommendedPlayer.textContent = `Recommended Player: ${result}`;
 
-            showFlashMessage("Done!", 'done');
+            showFlashMessage("Done!");
         } catch (error) {
             console.error('Error:', error);
         }
@@ -292,7 +337,6 @@ document.addEventListener("DOMContentLoaded", () => {
         // make a dictionary from settings - i.e. how much each position shows up
         const rosterRequirements = document.createElement("div");
         rosterRequirements.classList.add("roster-requirements");
-
         // Helper function to create list items for each position
         function createPositionListItems(position, count, players = []) {
             let listItems = '';
@@ -326,7 +370,7 @@ document.addEventListener("DOMContentLoaded", () => {
             'Flex': settings.FLEX,
             'Bench': settings.BE
         };
-    
+        console.log(positions);
         rosterRequirements.innerHTML = `
             <h3></h3>
             <ul>
@@ -340,32 +384,27 @@ document.addEventListener("DOMContentLoaded", () => {
                 ${createPositionListItems('BE', positions.Bench, teamDraftedPlayers.filter(p => p.Pos === 'BE'))}
             </ul>
         `;
+        document.getElementById("drafted-players").innerHTML = "";
         document.getElementById("drafted-players").appendChild(rosterRequirements);
     }
 
-    function showFlashMessage(message, type = 'connected') {
+    function showFlashMessage(message, type = 'short') {
         flashMessage.textContent = message;
         flashMessage.style.display = 'inline-block';
-        if (type === 'connected') {
+        if (type === 'short') {
             setTimeout(() => {
                 flashMessage.style.display = 'none';
             }, 1000);
         }
-        else if (type === 'optimizing') {
+        else if (type === 'long') {
             setTimeout(() => {
                 flashMessage.style.display = 'none';
-            }, 10000);
-        }
-        else {
-            setTimeout(() => {
-                flashMessage.style.display = 'none';
-            }, 1000);
+            }, 5000);
         }
     }
 
     function teamSelectChange(){
         draftedPlayersList.innerHTML = "";
-        console.log(settings);
         displayRosterRequirements(settings);
     }
 
@@ -375,7 +414,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
         // Names of CSV files
         // const csvFiles = ['FantasyPros_Fantasy_Football_Projections_K.csv', 'FantasyPros_Fantasy_Football_Projections_DST.csv', 'FantasyPros_Fantasy_Football_Projections_WR.csv', 'FantasyPros_Fantasy_Football_Projections_QB.csv', 'FantasyPros_Fantasy_Football_Projections_RB.csv', 'FantasyPros_Fantasy_Football_Projections_TE.csv'];
-        const csvFile = ['../vorp2024.csv']
+        const csvFile = ['vorp2024.csv']
         // Read each CSV file and extract 'Player', 'Team', and 'FPTS' columns
         const response = await fetch(csvFile);
         const text = await response.text();
@@ -388,7 +427,8 @@ document.addEventListener("DOMContentLoaded", () => {
             Player: player.Player.replace(/\./g, ''),
             Team: player.Team,
             FPTS: player.VORP,
-            Pos: player.POS
+            Pos: player.POS,
+            ADP: player.ADP
         }));
 
         allPlayersData.push(...extractedData);
