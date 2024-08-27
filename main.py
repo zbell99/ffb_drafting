@@ -5,8 +5,8 @@ import pandas as pd
 
 if __name__ == '__main__':
     #SLEEPER SPECIFIC (lines 8,9,10)
-    draft_id = "1114713116492824576"
-    personal_team = 6 #first round draft pick
+    draft_id = "1131672400501891072"
+    personal_team = 5 #first round draft pick
     next_pick_player = ""
     projection_amount = 0 #project up to 0, 1, or 2 picks out
 
@@ -34,5 +34,8 @@ if __name__ == '__main__':
     drafted_teams, drafted_pos = setup.update_draft(draft_id, names, roster_settings['teams']) #SLEEPER SPECIFIC
     available, roster_size, vorp_df, remaining_settings, personal_picks, player_position, full_team_settings, available1, cp = model.model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_pos, projection_amount, next_pick_player)
     selected_players, starting_players, total_vorp = model.maximize_vorp(available, roster_size, vorp_df, remaining_settings, personal_picks, player_position, full_team_settings, projection_amount, cp, available1, next_pick_player)
-    
 
+    roster = selected_players + drafted_teams[personal_team] #+ next_pick_player (not sure if needed)
+    score = model.score_team(roster, vorp_df, player_position, full_team_settings, starter_alpha=2)
+    print(score)
+    

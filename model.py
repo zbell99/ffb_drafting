@@ -316,3 +316,82 @@ def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_
     # starting_players = sorted(starting_players, key=lambda x: ADP[x])
     # for player in starting_players:
     #     print(player, player_position[player], ADP[player], vorp_df.loc[player]['VORP'], vorp_df.loc[player]['VORP_FLEX'], vorp_df.loc[player]['VORP_SFLEX'])
+
+
+def score_team(roster, vorp_df, player_position, team_settings, starter_alpha):
+    score = 0
+    sorted_roster = sorted(roster, key=lambda x: vorp_df.loc[x]['VORP_SFLEX'], reverse=True)
+
+    # Find the starters
+    qbs = [player for player in sorted_roster if player_position[player] == 'QB']
+    score += sum([vorp_df.loc[player]['VORP'] for player in qbs[:team_settings['starting_qb']]])*(starter_alpha+1)
+    sorted_roster = [player for player in sorted_roster if player not in qbs[:team_settings['starting_qb']]]
+
+    rbs = [player for player in sorted_roster if player_position[player] == 'RB']
+    score += sum([vorp_df.loc[player]['VORP'] for player in rbs[:team_settings['starting_rb']]])*(starter_alpha+1)
+    sorted_roster = [player for player in sorted_roster if player not in rbs[:team_settings['starting_rb']]]
+
+    wrs = [player for player in sorted_roster if player_position[player] == 'WR']
+    score += sum([vorp_df.loc[player]['VORP'] for player in wrs[:team_settings['starting_wr']]])*(starter_alpha+1)
+    sorted_roster = [player for player in sorted_roster if player not in wrs[:team_settings['starting_wr']]]
+
+    tes = [player for player in sorted_roster if player_position[player] == 'TE']
+    score += sum([vorp_df.loc[player]['VORP'] for player in tes[:team_settings['starting_te']]])*(starter_alpha+1)
+    sorted_roster = [player for player in sorted_roster if player not in tes[:team_settings['starting_te']]]
+
+    flex = [player for player in sorted_roster if player_position[player] in ['RB', 'WR', 'TE']]
+    pos_flex= [player_position[player] for player in flex][0]
+    score += sum([vorp_df.loc[player]['VORP_FLEX'] for player in flex[:team_settings['num_flex']]])*(starter_alpha+1)
+    sorted_roster = [player for player in sorted_roster if player not in flex[:team_settings['num_flex']]]
+
+    sflex = [player for player in sorted_roster if player_position[player] in ['QB', 'RB', 'WR', 'TE']]
+    score += sum([vorp_df.loc[player]['VORP_SFLEX'] for player in sflex[:team_settings['num_sflex']]])*(starter_alpha+1)
+    sorted_roster = [player for player in sorted_roster if player not in sflex[:team_settings['num_sflex']]]
+
+    k = [player for player in sorted_roster if player_position[player] == 'K']
+    score += sum([vorp_df.loc[player]['VORP'] for player in k[:team_settings['starting_k']]])*(starter_alpha+1)
+    sorted_roster = [player for player in sorted_roster if player not in k[:team_settings['starting_k']]]
+
+    dst = [player for player in sorted_roster if player_position[player] == 'DST']
+    score += sum([vorp_df.loc[player]['VORP'] for player in dst[:team_settings['starting_dst']]])*(starter_alpha+1)
+    sorted_roster = [player for player in sorted_roster if player not in dst[:team_settings['starting_dst']]]
+
+    # Find the bench
+    #one rb
+    if pos_flex != 'RB':
+        rb = [player for player in sorted_roster if player_position[player] == 'RB']
+        score += sum([vorp_df.loc[player]['VORP'] for player in rb[:1]])
+        sorted_roster = [player for player in sorted_roster if player not in rb[:1]]
+    if pos_flex != 'WR':
+        wr = [player for player in sorted_roster if player_position[player] == 'WR']
+        score += sum([vorp_df.loc[player]['VORP'] for player in wr[:1]])
+        sorted_roster = [player for player in sorted_roster if player not in wr[:1]]
+
+    if team_settings['num_sflex'] == 0:
+        qbte = [player for player in sorted_roster if player_position[player] in ['QB', 'TE']]
+        score += sum([vorp_df.loc[player]['VORP'] for player in qbte[:1]])
+        sorted_roster = [player for player in sorted_roster if player not in qbte[:1]]
+    else:
+        qb = [player for player in sorted_roster if player_position[player] == 'QB']
+        score += sum([vorp_df.loc[player]['VORP_SFLEX'] for player in qb[:team_settings['num_sflex']]])
+        sorted_roster = [player for player in sorted_roster if player not in qb[:team_settings['num_sflex']]]
+    
+    #flex for rest
+    flex = [player for player in sorted_roster if player_position[player] in ['RB', 'WR', 'TE']]
+    score += sum([vorp_df.loc[player]['VORP_FLEX'] for player in sorted_roster])
+    sorted_roster = [player for player in sorted_roster if player not in flex]
+
+    return score
+
+def final_scores(personal_team, drafted_teams, vorp_df, starter_alpha, player_position, team_settings):
+    scores = {}
+    for team in drafted_teams:
+        scores[team] = score_team(drafted_teams[team], vorp_df, starter_alpha, player_position, team_settings)
+    #calculate average score for all teams except personal team
+    avg_score = sum([scores[team] for team in scores if team != personal_team])/(len(scores)-1)
+    #print out average score, personal team score, and % difference
+    print(f"Average Score: {avg_score}")
+    print(f"Personal Team Score: {scores[personal_team]}")
+    print(f"Percent Better: {(scores[personal_team] - avg_score)/avg_score*100}%")
+    return scores
+    
