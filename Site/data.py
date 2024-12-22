@@ -68,15 +68,14 @@ def calculate_projections(raw_data,
 
 
 def calculate_vorp(position_data, roster_settings):
+
     num_teams = roster_settings['teams']
     num_qb = roster_settings['slots_qb']
     num_rb = roster_settings['slots_rb']
     num_wr = roster_settings['slots_wr']
     num_te = roster_settings['slots_te']
     num_flex = roster_settings['slots_flex']
-    num_sflex = 0
-    if ('slots_super_flex' in roster_settings):
-        num_sflex = roster_settings['slots_super_flex']
+    num_sflex = roster_settings['slots_super_flex']
     num_k = roster_settings['slots_k']
     num_def = roster_settings['slots_def']
     roster_size = roster_settings['rounds']
@@ -144,6 +143,6 @@ def assign_adp(df, adp, draft_type, num_teams, num_roster):
     df['ADP'].fillna(2*num_roster*num_teams, inplace=True)
 
     #drop periods in player name
-    df['Player'] = df['Player'].str.replace('.', '', regex=False)
+    df['Player'] = df['Player'].str.replace('.', '')
 
     return df, matches

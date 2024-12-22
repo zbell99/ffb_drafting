@@ -5,8 +5,8 @@ import pandas as pd
 
 if __name__ == '__main__':
     #SLEEPER SPECIFIC (lines 8,9,10)
-    draft_id = "1131672400501891072"
-    personal_team = 5 #first round draft pick
+    draft_id = "1137206808780681216"
+    personal_team = 7 #first round draft pick
     next_pick_player = ""
     projection_amount = 0 #project up to 0, 1, or 2 picks out
 

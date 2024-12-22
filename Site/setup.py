@@ -7,7 +7,7 @@ def initialize_data(data, scoring_format='ADP'):
     # fill missing with 500 in pandas
     data[scoring_format].fillna(500, inplace=True)
     data['Name'] = data['Player First Name'] + " " + data['Player Last Name']
-    data['Name'] = data['Name'].str.replace('.', '', regex=False)
+    data['Name'] = data['Name'].str.replace('.', '')
     data.sort_values(by=scoring_format, inplace=True)
 
     player_to_index = {}
@@ -77,8 +77,6 @@ def update_draft(draft_id, names, teams):
         position = pick["metadata"]["position"]
         name = pick["metadata"]["first_name"] + " " + pick["metadata"]["last_name"]
         name = name.replace(".", "")
-        if position == "DEF":
-            position = "DST"
 
         if name in names: ###DRAFT DATA MUST MATCH PROJECTION DATA FOR NAMES
             drafted[team].append(name)
@@ -90,12 +88,12 @@ def update_draft(draft_id, names, teams):
     return drafted, drafted_pos
 
 def raw_data():
-    return {"qb_data": "../projections/FantasyPros_Fantasy_Football_Projections_QB.csv",
-            "rb_data": "../projections/FantasyPros_Fantasy_Football_Projections_RB.csv",
-            "wr_data": "../projections/FantasyPros_Fantasy_Football_Projections_WR.csv",
-            "te_data": "../projections/FantasyPros_Fantasy_Football_Projections_TE.csv",
-            "k_data": "../projections/FantasyPros_Fantasy_Football_Projections_K.csv",
-            "dst_data": "../projections/FantasyPros_Fantasy_Football_Projections_DST.csv",}
+    return {"qb_data": "projections/FantasyPros_Fantasy_Football_Projections_QB.csv",
+            "rb_data": "projections/FantasyPros_Fantasy_Football_Projections_RB.csv",
+            "wr_data": "projections/FantasyPros_Fantasy_Football_Projections_WR.csv",
+            "te_data": "projections/FantasyPros_Fantasy_Football_Projections_TE.csv",
+            "k_data": "projections/FantasyPros_Fantasy_Football_Projections_K.csv",
+            "dst_data": "projections/FantasyPros_Fantasy_Football_Projections_DST.csv",}
 
 def adp():
-    return pd.read_csv("ADP2024.csv")
+    return pd.read_csv("adp/ADP2024.csv")
