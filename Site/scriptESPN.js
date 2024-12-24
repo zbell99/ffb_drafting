@@ -65,6 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const result = await response.json();
             console.log(result);
             teams = Object.keys(result);
+            console.log("TEAMS1:", teams);
             settings = result[teams[teams.length - 1]];
             // remove numbers from settings
             for (let key in settings) {
@@ -79,7 +80,9 @@ document.addEventListener("DOMContentLoaded", () => {
             //pickData = remove first team from result
             delete result[teams[teams.length - 1]];
             teams = Object.keys(result);
+            console.log("TEAMS2:", teams);
             picksData = result;
+            console.log(picksData);
             return initialize({ settings, picksData });
         } catch (error) {
             console.error('Error:', error);

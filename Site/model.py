@@ -4,7 +4,7 @@ from pulp import LpProblem, LpVariable, lpSum, value, LpMaximize
 from itertools import chain
 import helpers
 
-def maximize_vorp(players, roster_size, vorp, remaining_settings, picks, player_position, full_team_settings, avail=[]):
+def maximize_vorp(players, roster_size, vorp, remaining_settings, picks, player_position, full_team_settings, projection_amount, cp, avail=[], next_pick_player=""):
     # Initialize model
     start_alpha = 2
     model = LpProblem("FantasyFootballOptimization", LpMaximize)
@@ -67,7 +67,6 @@ def maximize_vorp(players, roster_size, vorp, remaining_settings, picks, player_
     model += lpSum([players_selected_v[player] for player in players if player_position[player] == "WR"]) == remaining_settings['starting_wr'] + 1 - remaining_settings['extra_wr']
     # vorp bench spot for QB + TE = 1
     model += lpSum([players_selected_v[player] for player in players if player_position[player] == "TE"]) <= remaining_settings['starting_te'] + 1 - remaining_settings['extra_te']
-    
 
     # Constraint: Any player starting must also be selected
     for player in players:
@@ -76,8 +75,11 @@ def maximize_vorp(players, roster_size, vorp, remaining_settings, picks, player_
         model += (players_starting_sf[player]) <= (players_selected_sf[player])
         model += (players_selected_v[player]) + (players_selected_fv[player]) + (players_selected_sf[player]) <= 1
     
-    # Constraint: For current pick, we can only select players who are still available from parameter
-    model += lpSum([(players_selected_v[player]+players_selected_fv[player]+players_selected_sf[player]) for player in players]) >= len(picks)
+    # Constraint: For current pick, we select player who is next pick, or from the available pool
+    if next_pick_player:
+        model += players_selected_v[next_pick_player] + players_selected_fv[next_pick_player] + players_selected_sf[next_pick_player] == 1
+    else:
+        model += lpSum([(players_selected_v[player]+players_selected_fv[player]+players_selected_sf[player]) for player in players]) >= len(picks)
 
     # Constraint: For next pick, we can only select players who are still available based on reduced pool from preprocessing
     if roster_size>1:
@@ -91,7 +93,10 @@ def maximize_vorp(players, roster_size, vorp, remaining_settings, picks, player_
         # Constraint: For each pick, we can only select players who are still available based on reduced pool from ADP
         else: #true for the greedy algorithm used to set up the main optimization
             for pick in picks[1:]:
-                available_players = players[pick-picks[0]:]
+                if projection_amount == 0:
+                    available_players = players[pick-cp:]
+                else:
+                    available_players = players[pick-picks[0]:]
                 model += lpSum([(players_selected_v[player]+players_selected_fv[player]+players_selected_sf[player]) for player in available_players]) >= len(picks) - picks.index(pick)
         
     # Solve the problem
@@ -115,12 +120,13 @@ def maximize_vorp(players, roster_size, vorp, remaining_settings, picks, player_
     print(f"Starting VORP: {start_vorp}")
     print(f"Starting Flex: {start_flex}")
     print(f"Starting SFlex: {start_sflex}")
-    print(f"Selected Players: {selected_players}")
+
     return selected_players, starting_players, total_vorp
 
-def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_pos):
+def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_pos, projection_amount, next_pick_player=""):
     # Load data -- WONT NEED THIS
     df = pd.read_csv('vorp2024.csv')
+    
     # get into the right format
     players = df['Player'].tolist()
 
@@ -149,6 +155,9 @@ def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_
     full_team_settings = helpers.full_position_constraints(roster_settings)
 
     drafted_players = list(chain(*drafted_teams.values()))
+    cp = len(drafted_players) + 1 #used if no projections
+    if next_pick_player:
+        drafted_players.append(next_pick_player)
 
     drafted_teams_preprocess = copy.deepcopy(drafted_teams)
     drafted_pos_preprocess = copy.deepcopy(drafted_pos)
@@ -157,19 +166,22 @@ def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_
     #remove drafted players from available players
     available = [player for player in players if player not in drafted_players]
     sorted(available, key=lambda x: ADP[x])
-  
+        
     personal_picks = helpers.get_picks(personal_team, roster_size, teams)
+    
     current_pick = len(drafted_players) + 1 #needs to be based on progress of the draft
-
+    if next_pick_player:
+        current_pick -= 1
+    
     #personal picks remaining
     personal_picks = [pick for pick in personal_picks if pick >= current_pick]
-
+    
     #project picks before your current pick
     if not personal_picks:
         print('Draft is over')
         return drafted_teams[personal_team]
 
-    while current_pick < personal_picks[0]:
+    while current_pick < personal_picks[0] and projection_amount > 0:
         cur_team = helpers.get_team_from_pick(current_pick, teams)
         picks = helpers.get_picks(cur_team, roster_size, teams)
         picks = [pick for pick in picks if pick >= current_pick]
@@ -182,7 +194,7 @@ def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_
 
         remaining_settings = helpers.remaining_position_constraints(drafted_pos, full_team_settings, cur_team)
 
-        selected_players_temp, starting_players_temp, total_vorp_temp = maximize_vorp(available, roster_size, vorp_df, remaining_settings, picks, player_position, full_team_settings)
+        selected_players_temp, starting_players_temp, total_vorp_temp = maximize_vorp(available, roster_size, vorp_df, remaining_settings, picks, player_position, full_team_settings, projection_amount=0, cp=current_pick)
 
         #POST-PROCESS PICKED PLAYER
         new_pick = selected_players_temp[0]
@@ -198,6 +210,9 @@ def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_
         available.remove(new_pick)
         current_pick += 1
 
+        if next_pick_player and current_pick == personal_picks[0]-1:
+            current_pick += 1
+
     #project picks/players available for next round's pick
     available1 = copy.deepcopy(available)
     current_pick1 = current_pick
@@ -205,7 +220,7 @@ def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_
     if len(personal_picks) <= 1:
         print('Only one pick left')
     else:
-        while current_pick1 < personal_picks[1]:
+        while current_pick1 < personal_picks[1] and projection_amount > 1:
             cur_team = helpers.get_team_from_pick(current_pick1, teams)
             picks = helpers.get_picks(cur_team, roster_size, teams)
             picks = [pick for pick in picks if pick >= current_pick1]
@@ -217,7 +232,7 @@ def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_
             print("Roster Size:", roster_size, len(drafted_cur))
             remaining_settings = helpers.remaining_position_constraints(drafted_pos_preprocess, full_team_settings, cur_team)
             
-            selected_players_temp, starting_players_temp, total_vorp_temp = maximize_vorp(available1, roster_size, vorp_df, remaining_settings, picks, player_position, full_team_settings)
+            selected_players_temp, starting_players_temp, total_vorp_temp = maximize_vorp(available1, roster_size, vorp_df, remaining_settings, picks, player_position, full_team_settings, projection_amount=0, cp=current_pick1)
 
             new_pick = selected_players_temp[0]
             drafted_teams_preprocess[cur_team].append(new_pick)
@@ -280,9 +295,11 @@ def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_
     # print('TE:', min_tes, max_tes, starting_te, 'current', drafted_pos[personal_team]['TE'])
     # print('Flex:', starting_flex, 'current', drafted_pos[personal_team]['RB'] + drafted_pos[personal_team]['WR'] + drafted_pos[personal_team]['TE'])
     # print('Superflex:', starting_sflex, 'current', drafted_pos[personal_team]['QB'] + drafted_pos[personal_team]['RB'] + drafted_pos[personal_team]['WR'] + drafted_pos[personal_team]['TE'])
-    print('Remaining Settings:', remaining_settings)
-    print(available, roster_size, vorp_df, remaining_settings, personal_picks, player_position, full_team_settings, available1)
-    return available, roster_size, vorp_df, remaining_settings, personal_picks, player_position, full_team_settings, available1
+    if next_pick_player:
+        available.insert(0, next_pick_player)
+    if projection_amount < 2:
+        available1 = []
+    return available, roster_size, vorp_df, remaining_settings, personal_picks, player_position, full_team_settings, available1, cp
 
     # Run optimization with projections through first two picks
     selected_players, starting_players, total_vorp = maximize_vorp(available, roster_size, vorp_df, remaining_settings, personal_picks, player_position, full_team_settings, avail=available1)
@@ -299,3 +316,82 @@ def model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_
     # starting_players = sorted(starting_players, key=lambda x: ADP[x])
     # for player in starting_players:
     #     print(player, player_position[player], ADP[player], vorp_df.loc[player]['VORP'], vorp_df.loc[player]['VORP_FLEX'], vorp_df.loc[player]['VORP_SFLEX'])
+
+
+def score_team(roster, vorp_df, player_position, team_settings, starter_alpha):
+    score = 0
+    sorted_roster = sorted(roster, key=lambda x: vorp_df.loc[x]['VORP_SFLEX'], reverse=True)
+
+    # Find the starters
+    qbs = [player for player in sorted_roster if player_position[player] == 'QB']
+    score += sum([vorp_df.loc[player]['VORP'] for player in qbs[:team_settings['starting_qb']]])*(starter_alpha+1)
+    sorted_roster = [player for player in sorted_roster if player not in qbs[:team_settings['starting_qb']]]
+
+    rbs = [player for player in sorted_roster if player_position[player] == 'RB']
+    score += sum([vorp_df.loc[player]['VORP'] for player in rbs[:team_settings['starting_rb']]])*(starter_alpha+1)
+    sorted_roster = [player for player in sorted_roster if player not in rbs[:team_settings['starting_rb']]]
+
+    wrs = [player for player in sorted_roster if player_position[player] == 'WR']
+    score += sum([vorp_df.loc[player]['VORP'] for player in wrs[:team_settings['starting_wr']]])*(starter_alpha+1)
+    sorted_roster = [player for player in sorted_roster if player not in wrs[:team_settings['starting_wr']]]
+
+    tes = [player for player in sorted_roster if player_position[player] == 'TE']
+    score += sum([vorp_df.loc[player]['VORP'] for player in tes[:team_settings['starting_te']]])*(starter_alpha+1)
+    sorted_roster = [player for player in sorted_roster if player not in tes[:team_settings['starting_te']]]
+
+    flex = [player for player in sorted_roster if player_position[player] in ['RB', 'WR', 'TE']]
+    pos_flex= [player_position[player] for player in flex][0]
+    score += sum([vorp_df.loc[player]['VORP_FLEX'] for player in flex[:team_settings['num_flex']]])*(starter_alpha+1)
+    sorted_roster = [player for player in sorted_roster if player not in flex[:team_settings['num_flex']]]
+
+    sflex = [player for player in sorted_roster if player_position[player] in ['QB', 'RB', 'WR', 'TE']]
+    score += sum([vorp_df.loc[player]['VORP_SFLEX'] for player in sflex[:team_settings['num_sflex']]])*(starter_alpha+1)
+    sorted_roster = [player for player in sorted_roster if player not in sflex[:team_settings['num_sflex']]]
+
+    k = [player for player in sorted_roster if player_position[player] == 'K']
+    score += sum([vorp_df.loc[player]['VORP'] for player in k[:team_settings['starting_k']]])*(starter_alpha+1)
+    sorted_roster = [player for player in sorted_roster if player not in k[:team_settings['starting_k']]]
+
+    dst = [player for player in sorted_roster if player_position[player] == 'DST']
+    score += sum([vorp_df.loc[player]['VORP'] for player in dst[:team_settings['starting_dst']]])*(starter_alpha+1)
+    sorted_roster = [player for player in sorted_roster if player not in dst[:team_settings['starting_dst']]]
+
+    # Find the bench
+    #one rb
+    if pos_flex != 'RB':
+        rb = [player for player in sorted_roster if player_position[player] == 'RB']
+        score += sum([vorp_df.loc[player]['VORP'] for player in rb[:1]])
+        sorted_roster = [player for player in sorted_roster if player not in rb[:1]]
+    if pos_flex != 'WR':
+        wr = [player for player in sorted_roster if player_position[player] == 'WR']
+        score += sum([vorp_df.loc[player]['VORP'] for player in wr[:1]])
+        sorted_roster = [player for player in sorted_roster if player not in wr[:1]]
+
+    if team_settings['num_sflex'] == 0:
+        qbte = [player for player in sorted_roster if player_position[player] in ['QB', 'TE']]
+        score += sum([vorp_df.loc[player]['VORP'] for player in qbte[:1]])
+        sorted_roster = [player for player in sorted_roster if player not in qbte[:1]]
+    else:
+        qb = [player for player in sorted_roster if player_position[player] == 'QB']
+        score += sum([vorp_df.loc[player]['VORP_SFLEX'] for player in qb[:team_settings['num_sflex']]])
+        sorted_roster = [player for player in sorted_roster if player not in qb[:team_settings['num_sflex']]]
+    
+    #flex for rest
+    flex = [player for player in sorted_roster if player_position[player] in ['RB', 'WR', 'TE']]
+    score += sum([vorp_df.loc[player]['VORP_FLEX'] for player in sorted_roster])
+    sorted_roster = [player for player in sorted_roster if player not in flex]
+
+    return score
+
+def final_scores(personal_team, drafted_teams, vorp_df, starter_alpha, player_position, team_settings):
+    scores = {}
+    for team in drafted_teams:
+        scores[team] = score_team(drafted_teams[team], vorp_df, starter_alpha, player_position, team_settings)
+    #calculate average score for all teams except personal team
+    avg_score = sum([scores[team] for team in scores if team != personal_team])/(len(scores)-1)
+    #print out average score, personal team score, and % difference
+    print(f"Average Score: {avg_score}")
+    print(f"Personal Team Score: {scores[personal_team]}")
+    print(f"Percent Better: {(scores[personal_team] - avg_score)/avg_score*100}%")
+    return scores
+    

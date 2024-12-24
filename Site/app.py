@@ -52,6 +52,9 @@ def process_info_ESPN():
     personal_team = data.get('personal_team')
     drafted_players = data.get('drafted_players')
 
+    projection_amount=1
+    next_pick_player=""
+
     league_type = {'ppr': 'Redraft PPR ADP', 'half_ppr': 'Redraft Half PPR ADP', 'std': 'Redraft Half PPR ADP', '2qb': 'Redraft SF ADP'}
     df = pd.read_csv('vorp2024.csv')
     adp = setup.adp()
@@ -92,8 +95,8 @@ def process_info_ESPN():
                 if pos in drafted_pos[idx + 1]:
                     drafted_pos[idx + 1][pos] += 1
     print(drafted_pos)
-    available, roster_size, vorp_df, remaining_settings, personal_picks, player_position, full_team_settings, available1 = model.model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_pos)
-    selected_players, starting_players, total_vorp = model.maximize_vorp(available, roster_size, vorp_df, remaining_settings, personal_picks, player_position, full_team_settings, available1)
+    available, roster_size, vorp_df, remaining_settings, personal_picks, player_position, full_team_settings, available1, cp = model.model_preprocess(df, roster_settings, personal_team, drafted_teams, drafted_pos, projection_amount, next_pick_player)
+    selected_players, starting_players, total_vorp = model.maximize_vorp(available, roster_size, vorp_df, remaining_settings, personal_picks, player_position, full_team_settings, projection_amount, cp, available1, next_pick_player)
     return jsonify(selected_players[0])
 
 @app.route('/launch-ESPN', methods=['POST'])
