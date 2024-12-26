@@ -72,14 +72,14 @@ class OptiModel(BaseModel):
 
 
 class Draft(BaseModel):
-    id: int
+    id: str
     name: str
     num_teams: int
     rounds: int
     roster_settings: [RosterSettings]
     scoring_settings: [ScoringSettings]
-    teams: [Team]
-    players: [Player]
+    teams: {Team}
+    players: {Player}
     drafted_players: {Player}
     remaining_players: {Player}
     opti_model: [OptiModel]
