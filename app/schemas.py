@@ -1,31 +1,27 @@
 from pydantic import BaseModel
 
 class RosterSettings(BaseModel):
+    slots_qb: int
+    slots_rb: int
     slots_wr: int
     slots_te: int
-    slots_rb: int
-    slots_qb: int
     slots_k: int
     slots_flex: int
     slots_sflex: int
     slots_def: int
     slots_bn: int
+    max_qb: int
+    max_rb: int
     max_wr: int
     max_te: int
-    max_rb: int
-    max_qb: int
     max_k: int
-    max_flex: int
-    max_sflex: int
     max_def: int
     max_bn: int
+    min_qb: int
+    min_rb: int
     min_wr: int
     min_te: int
-    min_rb: int
-    min_qb: int
     min_k: int
-    min_flex: int
-    min_sflex: int
     min_def: int
     min_bn: int
 
@@ -42,7 +38,7 @@ class Team(BaseModel):
 
 
 class Player(BaseModel):
-    id: int
+    id: str
     name: str
     position: str
     team: int
@@ -72,13 +68,14 @@ class OptiModel(BaseModel):
 
 
 class Draft(BaseModel):
+    host: str
     id: str
     name: str
     num_teams: int
     rounds: int
     roster_settings: [RosterSettings]
     scoring_settings: [ScoringSettings]
-    teams: {Team}
+    rosters: {Team}
     players: {Player}
     drafted_players: {Player}
     remaining_players: {Player}

@@ -1,11 +1,22 @@
-#AUTO GENERATED SO FAR
 class Player:
-    def __init__(self, id: int, name: str, position: str, team: int, adp: float, pass_attempts: float, pass_yards: float, pass_tds: float, interceptions: float, fumbles: float, rush_attempts: float, rush_yards: float, rush_tds: float, receptions: float, rec_yards: float, rec_tds: float, kicker_pts: float, def_pts: float):
-        self.id = id
-        self.name = name
-        self.position = position
-        self.team = team
-        self.adp = adp
-        self.pass_attempts = pass_attempts
-        self.pass_yards = pass_yards
-        self.pass_tds = pass_tds
+    def __init__(self, player: dict):
+        self.id = player['ID']
+        self.name = player['Player']
+        self.position = player['POS']
+        self.team = player['Team']
+        self.pass_attempts = player['PASS_ATT']
+        self.pass_yards = player['PASS_YDS']
+        self.pass_tds = player['PASS_TDS']
+        self.rush_attempts = player['RUSH_ATT']
+        self.rush_yards = player['RUSH_YDS']
+        self.rush_tds = player['RUSH_TDS']
+        self.receptions = player['REC']
+        self.rec_yards = player['REC_YDS']
+        self.rec_tds = player['REC_TDS']
+        self.interceptions = player['INT']
+        self.fumbles = player['FUM']
+        self.kicker_pts = player['KICKER_PTS']
+        self.def_pts = player['DEF_PTS']
+        self.fpts = player['FPTS']
+        self.vorp = player['VORP']
+        self.adp = player['ADP']

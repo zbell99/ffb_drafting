@@ -18,7 +18,6 @@ class SleeperProcessor(PayloadProcessor):
             }
         else:
             payload = self._get_draft_payload(draft_id)
-            print(payload, "payload")
             if payload:
                 print("Draft ID found: ", draft_id)
                 draft_type = payload['metadata']['scoring_type']
