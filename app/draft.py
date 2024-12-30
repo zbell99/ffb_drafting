@@ -57,6 +57,84 @@ class Draft:
 
 
         self.players = {player.Player(p) for i, p in self.projection_data.iterrows()}
+        self.models = {
+            "Top Player": None,
+            "Player 2": None,
+            "Player 3": None,
+            "QB": None,
+            "RB": None,
+            "WR": None,
+            "TE": None,
+            "K": None,
+            "DEF": None  
+        }
+
+        # ASSUME STARTING AT ROUND 1
+        self.current_pick = 1
         self.drafted_players = {}
-        self.remaining_players = self.players
-        self.model = []
+        self.available_players = self.players
+        self.projected_picks = {}
+    
+
+    def _calculate_projections(self):
+        '''
+        Calculates the projections for each player
+        '''
+        pass
+
+
+    def _calculate_vorp(self):
+        '''
+        Calculates the VORP for each player
+        '''
+        pass
+
+
+    def _project_picks(self, num_picks):
+        '''
+        Projects the next num_picks picks.
+            - Runs the optimization model to determine who each team will pick over the next two rounds
+            - Updates the projected_picks dictionary with the projected picks
+        '''
+        for i in range(num_picks):
+            self.projected_picks[self.current_pick+i] = self.optimize_draft(i)
+
+
+    def reset_draft(self):
+        ''' 
+        Resets the draft to the beginning
+        '''
+        self.drafted_players = {}
+        self.available_players = self.players
+        for t in self.teams:
+            t.roster = []
+        return self
+
+    
+    def update_draft(self, picks):
+        ''' 
+        Looks at the picks endpoint of the draft and updates the drafted players and teams
+        '''
+        for pick in picks:
+            player = self.available_players[pick['player_id']]
+            self.drafted_players[player] = pick['round']
+            self.available_players.remove(player)
+            self.teams[pick['team_id']].roster.append(player)
+
+        self._project_picks(20)
+        return self
+
+
+    def optimize_draft(self, team: str):
+        '''
+        Optimizes the draft
+        '''
+        
+
+        ''' THIS MUST RETURN A MODEL OBJECT: 
+            NEXT PLAYER TO PICK
+            OPTIMAL ROSTER
+            SCORE
+        '''
+        self.models[team] = model.Model(team, self.current_pick)
+

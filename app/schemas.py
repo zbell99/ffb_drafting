@@ -1,4 +1,48 @@
+from typing import List, Dict, Set
 from pydantic import BaseModel
+
+class Player(BaseModel):
+    id: str
+    name: str
+    position: str
+    team: int
+    adp: float
+    pass_attempts: float
+    pass_yards: float
+    pass_tds: float
+    interceptions: float
+    fumbles: float
+    rush_attempts: float
+    rush_yards: float
+    rush_tds: float
+    receptions: float
+    rec_yards: float
+    rec_tds: float
+    kicker_pts: float
+    def_pts: float
+
+
+class Team(BaseModel):
+    id: int
+    name: str
+    pick: int #first pick -- maybe make all picks
+    roster: List[Player]
+
+
+class OptiModel(BaseModel):
+    team_id: str
+    name: str
+    picks: List[int]
+    current_pick: int
+    score: float
+    optimal_roster: Team
+
+
+class Model(BaseModel):
+    models: Dict[str, OptiModel]
+    projected_picks: Dict[int, Player]
+    #function: optimize_draft
+
 
 class RosterSettings(BaseModel):
     slots_qb: int
@@ -30,53 +74,16 @@ class ScoringSettings(BaseModel):
     scoring_settings: dict # fill this in
 
 
-class Team(BaseModel):
-    id: int
-    name: str
-    pick: int #first pick -- maybe make all picks
-    roster: [Player]
-
-
-class Player(BaseModel):
-    id: str
-    name: str
-    position: str
-    team: int
-    adp: float
-    pass_attempts: float
-    pass_yards: float
-    pass_tds: float
-    interceptions: float
-    fumbles: float
-    rush_attempts: float
-    rush_yards: float
-    rush_tds: float
-    receptions: float
-    rec_yards: float
-    rec_tds: float
-    kicker_pts: float
-    def_pts: float
-
-
-class OptiModel(BaseModel):
-    id: int
-    name: str
-    team: int
-    #vorp_ranks: dict #each position the cutoff of replacement level
-    model: dict # fill this in
-
-
-
 class Draft(BaseModel):
     host: str
     id: str
     name: str
     num_teams: int
     rounds: int
-    roster_settings: [RosterSettings]
-    scoring_settings: [ScoringSettings]
-    rosters: {Team}
-    players: {Player}
-    drafted_players: {Player}
-    remaining_players: {Player}
-    opti_model: [OptiModel]
+    roster_settings: List[RosterSettings]
+    scoring_settings: List[ScoringSettings]
+    rosters: Set[Team]
+    players: Set[Player]
+    drafted_players: Set[Player]
+    remaining_players: Set[Player]
+    model: Model
