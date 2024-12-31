@@ -25,7 +25,7 @@ class SleeperProcessor(PayloadProcessor):
                     'num_teams': payload['settings']['teams'],
                     'rounds': payload['settings']['rounds'],
                     'roster_settings': payload['settings'],
-                    'scoring_settings': self._scoring_settings(draft_type),
+                    'scoring_settings': self._scoring_settings_default(draft_type),
                     'rosters': payload['draft_order'],
                 }
             else:
@@ -46,7 +46,7 @@ class SleeperProcessor(PayloadProcessor):
         return json.loads(response_body)
     
 
-    def _scoring_settings(self, draft_type: str) -> dict:
+    def _scoring_settings_default(self, draft_type: str) -> dict:
         scoring_settings = {'bonus_rec_te': 0,
             'pass_int': -2.0,
             'pass_2pt': 2.0,
