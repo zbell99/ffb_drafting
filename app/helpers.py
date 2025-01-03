@@ -1,4 +1,5 @@
 import pandas as pd
+from fuzzywuzzy import process
 
 def fill_missing_columns(df, obj):
     '''
@@ -20,3 +21,14 @@ def standardize_column_types(df, to_exclude):
         df[col] = pd.to_numeric(df[col].str.replace(',', ''))
         df[col] = df[col].astype(int)
     return df
+
+
+def fuzzy_match(item, names, matches = {}, score=95):
+    '''
+    Matches player names in the data to the player names in the player_to_index dictionary
+    '''
+    match = process.extractOne(item, names)
+    if match[1] >= score:
+        matches[item] = match[0]
+    
+    return

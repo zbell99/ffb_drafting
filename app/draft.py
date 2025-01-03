@@ -1,11 +1,11 @@
 import pandas as pd
 
 import league_settings as settings
-import model as model
+import app.model as model
 import team as team
 import player as player
 from payload_processor_factory import get_payload_processor
-import helpers
+import app.helpers as helpers
 import constants
 
 class Draft:
@@ -14,13 +14,15 @@ class Draft:
         self.id = id
         self.name = name
         
-        processor = get_payload_processor(host)
-        draft_payload = processor.process(id)
+        processor = get_payload_processor(self.host)
+        draft_payload = processor.process(self.id)
         
         self.num_teams = draft_payload['num_teams']
         self.rounds = draft_payload['rounds']
         self.roster_settings = settings.RosterSettings(draft_payload['roster_settings'])
         self.scoring_settings = settings.ScoringSettings(draft_payload['scoring_settings'])
+        if self.roster_settings.slots_sflex > 0:
+            self.scoring_format = '2qb'
         rosters = draft_payload['rosters']
         
         self.teams = {team.Team(team_id=t, pick=rosters[t], roster=[]) for t in rosters}
@@ -29,13 +31,13 @@ class Draft:
         projection_files = self.raw_projection_data()
         projection_data = self.process_projection_data(projection_files)
         projection_data = self.calculate_projections(projection_data)
-        # self.projection_data = calculate_vorp(self.projection_data, self.roster_settings, self.num_teams) #add VORP to projection data
+        projection_data = self.calculate_vorp(projection_data) #add VORP to projection data
 
         #adp data
-        # adp_files = raw_adp_data()
-        
+        adp = self.raw_adp_data()
+
         # #3. connect names
-        # self.projection_data = assign_adp(self.projection_data, adp_files, self.scoring_settings)
+        projection_data = self.assign_adp(projection_data, adp)
 
         #simulated data for testing
         self.projection_data = pd.DataFrame({'Player': ['Player1', 'Player2', 'Player3', 'Player4', 'Player5'],
@@ -149,15 +151,88 @@ class Draft:
         return position_data
 
 
-    def _calculate_vorp(self):
-        '''
-        Calculates the VORP for each player
-        '''
-        pass
+    def _set_vorp_replacement_level(self):
+        replacements = {}
+        replacements['QB'] = int((self.num_teams * (self.roster_settings.slots_qb + self.roster_settings.slots_sflex + 0.25))//1 + 1)
+        replacements['RB'] = int((self.num_teams * (self.roster_settings.slots_rb + 0.5*self.roster_settings.slots_flex + self.roster_settings.slots_bn*0.3))//1 + 1)
+        replacements['WR'] = int(self.num_teams * (self.roster_settings.slots_wr + 0.5*self.roster_settings.slots_flex + self.roster_settings.slots_bn*0.3)//1 + 1)
+        replacements['TE'] = int(self.num_teams * (self.roster_settings.slots_te + 0*self.roster_settings.slots_flex + 0.75)//1 + 1)
+        replacements['K'] = self.num_teams * self.roster_settings.slots_k
+        replacements['DEF'] = self.num_teams * self.roster_settings.slots_def
+        replacements['FLEX'] = self.num_teams * (self.rounds-self.roster_settings.slots_k-self.roster_settings.slots_def-self.roster_settings.slots_qb)
+        replacements['SFLEX'] = self.num_teams * (self.rounds-self.roster_settings.slots_k-self.roster_settings.slots_def)
+        return replacements
 
 
-    def _raw_adp_data():
+    def calculate_vorp(self, position_data):
+        '''
+        Calculates the VORP, Flex VORP, and SFlex VORP for each player
+        '''
+        replacements = self._set_vorp_replacement_level()
+        position_data['VORP'] = 0
+
+        #REFACTOR BELOW
+        for pos in ['QB', 'RB', 'WR', 'TE', 'K', 'DEF']:
+            x = position_data['POS'] == pos
+            position_data.loc[x, 'VORP'] = position_data.loc[x, 'FPTS'] - position_data.loc[x, 'FPTS'].nlargest(replacements[pos]).min()
+
+        position_data['VORP_FLEX'] =  position_data['VORP']
+        temp_flex = position_data['POS'].isin(['RB', 'WR', 'TE'])
+        position_data.loc[temp_sflex, 'VORP_FLEX'] = position_data.loc[temp_flex, 'FPTS'] - position_data.loc[temp_flex, 'FPTS'].nlargest(replacements['FLEX']).min()
+
+        
+        position_data['VORP_SFLEX'] =  position_data['VORP_FLEX']
+        temp_sflex = position_data['POS'].isin(['QB', 'RB', 'WR', 'TE'])
+        position_data.loc[temp_sflex, 'VORP_SFLEX'] = position_data.loc[temp_sflex, 'FPTS'] - position_data.loc[temp_sflex, 'FPTS'].nlargest(replacements['SFLEX']).min()
+
+        #round to 2 decimal places
+        position_data[['VORP', 'VORP_FLEX', 'VORP_SFLEX']] = position_data[['VORP', 'VORP_FLEX', 'VORP_SFLEX']].round(2)
+
+        return position_data
+    
+
+    def raw_adp_data():
         return pd.read_csv("adp/ADP2024.csv")
+    
+
+    def assign_adp(self, position_data, adp):
+        '''
+        Parameters:
+            - position_data: dataframe with all the position data
+            - adp_files: dataframe with the adp data
+
+        Assigns the ADP to the position data
+
+        Returns the dataframe with the ADP assigned
+        '''
+        adp['Player'] = adp['Player First Name'] + ' ' + adp['Player Last Name']
+        adp_players = adp['Player'].unique()
+
+        # Create a dictionary to store the matches
+        matches = {}
+        for player in position_data['Player'].unique():
+            #match player names
+            matches = helpers.fuzzy_match(item=player, list=adp_players, matches=matches, score=95)
+
+        # Replace the player names in df with the matches
+        position_data['Player'] = position_data['Player'].replace(matches)
+        #replace JAC with JAX
+        position_data['Team'] = position_data['Team'].replace('JAC', 'JAX')
+
+        #TODO: THIS IS SLEEPER SPECIFIC -- PROBABLY NEED A FACTORY
+        league_type = {'ppr': 'Redraft PPR ADP', 'half_ppr': 'Redraft Half PPR ADP', 'std': 'Redraft Half PPR ADP', '2qb': 'Redraft SF ADP'}
+        draft_type = league_type[self.scoring_format]
+
+        # Merge df and adp on player and team
+        position_data = position_data.merge(adp[['Player', 'Player First Name', 'Player Last Name', 'Player Team', draft_type]], how='left', left_on=['Player', 'Team'], right_on=['Player', 'Player Team'])
+        #rename columns
+        position_data = position_data.rename(columns={draft_type: 'ADP'})
+        position_data['ADP'].fillna(2*self.rounds*self.num_teams, inplace=True)
+
+        #drop periods in player name
+        position_data['Player'] = position_data['Player'].str.replace('.', '')
+
+        return position_data
     
 
     def _project_picks(self, num_picks):

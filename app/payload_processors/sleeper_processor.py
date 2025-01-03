@@ -14,6 +14,7 @@ class SleeperProcessor(PayloadProcessor):
                 'rounds': len(payload['roster_positions']),
                 'roster_settings': draft_payload['settings'],
                 'scoring_settings': payload['scoring_settings'],
+                'scoring_format': draft_payload['metadata']['scoring_type'],
                 'rosters': draft_payload['draft_order'],
             }
         else:
@@ -26,6 +27,7 @@ class SleeperProcessor(PayloadProcessor):
                     'rounds': payload['settings']['rounds'],
                     'roster_settings': payload['settings'],
                     'scoring_settings': self._scoring_settings_default(draft_type),
+                    'scoring_format': draft_type,
                     'rosters': payload['draft_order'],
                 }
             else:
