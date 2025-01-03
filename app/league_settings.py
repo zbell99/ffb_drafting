@@ -23,7 +23,7 @@ class RosterSettings:
 
         ## THIS IS MY OWN LOGIC
         self.max_qb = self.slots_qb + self.slots_sflex + self.slots_bn//4
-        self.max_rb = self.slots_rb, self.slots_flex, self.slots_bn//2
+        self.max_rb = self.slots_rb + self.slots_flex + self.slots_bn//2
         self.max_wr = self.slots_wr + self.slots_flex + self.slots_bn//2
         self.max_te = self.slots_te + 2
         self.max_k = self.slots_k
@@ -33,11 +33,11 @@ class RosterSettings:
 
 class ScoringSettings:
     def __init__(self, scoring_settings: dict):
-        self.PASSTD = scoring_settings['pass_td']
+        self.PASSTDS = scoring_settings['pass_td']
         self.PASSYDS = scoring_settings['pass_yd']
-        self.RUSHTD = scoring_settings['rush_td']
+        self.RUSHTDS = scoring_settings['rush_td']
         self.RUSHYDS = scoring_settings['rush_yd']
-        self.RECTD = scoring_settings['rec_td']
+        self.RECTDS = scoring_settings['rec_td']
         self.RECYDS = scoring_settings['rec_yd']
         self.REC = scoring_settings['rec']
         self.TE_PREM = scoring_settings['bonus_rec_te']

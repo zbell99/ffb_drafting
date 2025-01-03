@@ -8,12 +8,12 @@ FANTASYPROS_FILES = {
 }
 
 FANTASYPROS_RENAMING = {
-    "qb_data": {'YDS':'PASSYDS', 'TDS':'PASSTD', 'YDS.1': 'RUSHYDS', 'TDS.1': 'RUSHTD', 'FL': 'FUM', 'INTS': 'INT'},
-    "rb_data": {'ATT': 'RUSH', 'YDS':'RUSHYDS', 'TDS':'RUSHTD', 'YDS.1': 'RECYDS', 'TDS.1': 'RECTD', 'FL': 'FUM_LOST'},
-    "wr_data": {'YDS':'RECYDS', 'TDS':'RECTD', 'ATT': 'RUSH', 'YDS.1': 'RUSHYDS', 'TDS.1': 'RUSHTD', 'FL': 'FUM_LOST'},
-    "te_data": {'YDS':'RECYDS', 'TDS':'RECTD', 'FL': 'FUM_LOST'},
-    "kicker_data": {'FPTS': 'KICKER_PTS'},
-    "defense_data": {'FPTS': 'DEF_PTS'}
+    "qb_data": {'YDS':'PASSYDS', 'TDS':'PASSTDS', 'YDS.1': 'RUSHYDS', 'TDS.1': 'RUSHTDS', 'FL': 'FUM', 'INTS': 'INT'},
+    "rb_data": {'ATT': 'RUSH', 'YDS':'RUSHYDS', 'TDS':'RUSHTDS', 'YDS.1': 'RECYDS', 'TDS.1': 'RECTDS', 'FL': 'FUM_LOST'},
+    "wr_data": {'YDS':'RECYDS', 'TDS':'RECTDS', 'ATT': 'RUSH', 'YDS.1': 'RUSHYDS', 'TDS.1': 'RUSHTDS', 'FL': 'FUM_LOST'},
+    "te_data": {'YDS':'RECYDS', 'TDS':'RECTDS', 'FL': 'FUM_LOST'},
+    "k_data": {'FPTS': 'KICKER_PTS'},
+    "def_data": {'FPTS': 'DEF_PTS'}
 }
 
 FANTASYPROS_POSITIONS = {
@@ -21,8 +21,8 @@ FANTASYPROS_POSITIONS = {
     "rb_data": "RB",
     "wr_data": "WR",
     "te_data": "TE",
-    "kicker_data": "K",
-    "defense_data": "DEF"
+    "k_data": "K",
+    "def_data": "DEF"
 }
 
 FANTASYPROS_COLS = [
@@ -42,3 +42,7 @@ FANTASYPROS_COLS = [
     'KICKER_PTS',
     'DEF_PTS'
 ]
+
+FLEX_POSITIONS = ['RB', 'WR', 'TE']
+
+SUPERFLEX_POSITIONS = ['QB', 'RB', 'WR', 'TE']

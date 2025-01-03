@@ -5,7 +5,7 @@ def fill_missing_columns(df, obj):
     '''
     Fills in missing columns with 0s
     '''
-    for col, val in obj.__dict__.items():
+    for col in obj:
         if col not in df.columns:
             df[col] = 0
     return df
@@ -25,10 +25,12 @@ def standardize_column_types(df, to_exclude):
 
 def fuzzy_match(item, names, matches = {}, score=95):
     '''
-    Matches player names in the data to the player names in the player_to_index dictionary
+    Pairs an item to its closest match in a list of names. If the match score is above a certain threshold, it is stored in a dictionary.
     '''
     match = process.extractOne(item, names)
+    # print(matches)
+    # print(item, match[0], match[1])
     if match[1] >= score:
         matches[item] = match[0]
-    
-    return
+    # print(matches)
+    return matches
